@@ -1,0 +1,37 @@
+[project]
+name = "fileplotter"
+version = "0.0.1"
+description = "Plot CSV file changes in realtime"
+authors = [
+    {name = "Johannes Aalto", email="ext-johannes.aalto@vaisala.com"},
+]
+license-expression = "MIT"
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.8"
+
+keywords = ["CSV", "bokeh"]
+
+classifiers = [
+    "Topic :: Software Development"
+]
+
+dependencies = [
+    "panel==0.14.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=22.6.0",
+]
+
+[project.urls]
+homepage = "https://github.com/jonppe/fileplotter"
+repository = "https://github.com/jonppe/fileplotter"
+
+[build-system]
+requires = [
+    "setuptools >= 35.0.2",
+    "setuptools_scm >= 2.0.0, <3"
+]
+
