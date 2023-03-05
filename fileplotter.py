@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import argparse
+import pathlib
 import sys
 
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 import panel as pn
@@ -30,6 +31,31 @@ xs = np.arange(1000)
 ys = np.random.randn(1000).cumsum()
 x, y = xs[-1], ys[-1]
 
+FILE_TYPES = [".csv", ".csv.gz", ".csv.bz2"]
+
+
+def find_files(folder: str) -> List[pathlib.Path]:
+    p = pathlib.Path(folder)
+    files = []
+    for t in FILE_TYPES:
+        files.extend(p.glob(f"*{t}"))
+    return files
+
+
+def open_file(path: pathlib.Path):
+    return open(path, "r", encoding="utf-8")
+
+
+def find_columns(
+    files: List[pathlib.Path], separator=","
+) -> Dict[pathlib.Path, List[str]]:
+    paths = {}
+    for path in files:
+        f = open_file(path)
+        cols = f.readline().split(separator)
+        paths[path] = cols
+    return paths
+
 
 def main():
     index = 0
@@ -45,9 +71,17 @@ def main():
     cds = ColumnDataSource(data={"x": xs, "y": ys})
 
     p.line("x", "y", source=cds)
-
+    files = find_files(args["directory"])
+    file_list = pn.widgets.MultiSelect(name="Files:", options=files)
+    path_cols = find_columns(files)
+    all_cols = set()
+    for cols in path_cols.values():
+        all_cols.update(cols)
+    column_list = pn.widgets.MultiSelect(name="Columns", options=list(all_cols))
+    control_row = pn.Row(file_list, column_list)
     bk_pane = pn.pane.Bokeh(p)
-    bk_pane.servable()
+    column = pn.Column(control_row, bk_pane, width=700)
+    column.servable()
 
     def stream():
         global x, y
