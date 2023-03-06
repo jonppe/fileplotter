@@ -39,7 +39,7 @@ def find_files(folder: str) -> List[pathlib.Path]:
     files = []
     for t in FILE_TYPES:
         files.extend(p.glob(f"*{t}"))
-    return files
+    return [f.relative_to(folder) for f in files]
 
 
 def open_file(path: pathlib.Path):
@@ -47,11 +47,11 @@ def open_file(path: pathlib.Path):
 
 
 def find_columns(
-    files: List[pathlib.Path], separator=","
+    folder, files: List[pathlib.Path], separator=","
 ) -> Dict[pathlib.Path, List[str]]:
     paths = {}
     for path in files:
-        f = open_file(path)
+        f = open_file(folder / path)
         cols = f.readline().split(separator)
         paths[path] = cols
     return paths
@@ -71,13 +71,26 @@ def main():
     cds = ColumnDataSource(data={"x": xs, "y": ys})
 
     p.line("x", "y", source=cds)
-    files = find_files(args["directory"])
-    file_list = pn.widgets.MultiSelect(name="Files:", options=files)
-    path_cols = find_columns(files)
-    all_cols = set()
-    for cols in path_cols.values():
-        all_cols.update(cols)
-    column_list = pn.widgets.MultiSelect(name="Columns", options=list(all_cols))
+    folder = args["directory"]
+    files = find_files(folder)
+    file_list = pn.widgets.MultiSelect(
+        name="Files:", options=files, size=8, value=files[0:1]
+    )
+
+    column_list = pn.widgets.MultiSelect(name="Columns", size=8)
+
+    def update_column_names(_):
+        path_cols = find_columns(folder, file_list.value)
+        all_cols = set()
+        for cols in path_cols.values():
+            all_cols.update(cols)
+
+        col_list = list(all_cols)
+        column_list.options = col_list
+
+    update_column_names(None)
+
+    column_list.param.watch(update_column_names, "value")
     control_row = pn.Row(file_list, column_list)
     bk_pane = pn.pane.Bokeh(p)
     column = pn.Column(control_row, bk_pane, width=700)
