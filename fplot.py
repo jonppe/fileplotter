@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 import argparse
-import bz2
-import gzip
-import pathlib
+import os
 import sys
 
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 import panel as pn
 
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource
+
+from fileplotter import csv
 
 
 def parse_args(argv: List[str]) -> dict:
@@ -33,43 +33,9 @@ xs = np.arange(1000)
 ys = np.random.randn(1000).cumsum()
 x, y = xs[-1], ys[-1]
 
-FILE_TYPES = {".csv": open, ".csv.gz": gzip.open, ".csv.bz2": bz2.open}
 
-
-def find_files(folder: str) -> List[pathlib.Path]:
-    p = pathlib.Path(folder)
-    files = []
-    for t in FILE_TYPES:
-        files.extend(p.glob(f"*{t}"))
-    return [f.relative_to(folder) for f in files]
-
-
-def open_file(path: pathlib.Path):
-    """Open file and return the file descriptor.
-
-    If the file has known compressed file suffix (gz, bz2), then use gzip or bz2 module to open the file.
-    """
-    open_func = open
-    for t in FILE_TYPES:
-        if path.name.endswith(t):
-            open_func = FILE_TYPES[t]
-    return open_func(path, "r", encoding="utf-8")
-
-
-def read_column_names(
-    folder, files: List[pathlib.Path], separator=","
-) -> Dict[pathlib.Path, List[str]]:
-    """Read column names for all files.
-
-    The return value is a dict {path: list-of-col-names}
-    :param folder: the base folder. All the paths are relative to this.
-    :param files: files to read column names"""
-    paths = {}
-    for path in files:
-        f = open_file(folder / path)
-        cols = f.readline().split(separator)
-        paths[path] = cols
-    return paths
+known_files = {}
+known_column_names = {}
 
 
 def main():
@@ -87,7 +53,9 @@ def main():
 
     p.line("x", "y", source=cds)
     folder = args["directory"]
-    files = find_files(folder)
+
+    files = csv.find_files(folder)
+    files = [f.relative_to(folder) for f in files]
     file_list = pn.widgets.MultiSelect(
         name="Files:", options=files, size=8, value=files[0:1]
     )
@@ -95,7 +63,8 @@ def main():
     column_list = pn.widgets.MultiSelect(name="Columns", size=8)
 
     def update_column_names(_):
-        path_cols = read_column_names(folder, file_list.value)
+        csv_files = [folder / f for f in file_list.value]
+        path_cols = csv.read_column_names(csv_files)
         all_cols = set()
         for cols in path_cols.values():
             all_cols.update(cols)
@@ -105,7 +74,7 @@ def main():
 
     update_column_names(None)
 
-    column_list.param.watch(update_column_names, "value")
+    file_list.param.watch(update_column_names, "value")
     control_row = pn.Row(file_list, column_list)
     bk_pane = pn.pane.Bokeh(p)
     column = pn.Column(control_row, bk_pane, width=700)
