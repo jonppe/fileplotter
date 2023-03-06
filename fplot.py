@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import argparse
+import bz2
+import gzip
 import pathlib
 import sys
 
@@ -31,7 +33,7 @@ xs = np.arange(1000)
 ys = np.random.randn(1000).cumsum()
 x, y = xs[-1], ys[-1]
 
-FILE_TYPES = [".csv", ".csv.gz", ".csv.bz2"]
+FILE_TYPES = {".csv": open, ".csv.gz": gzip.open, ".csv.bz2": bz2.open}
 
 
 def find_files(folder: str) -> List[pathlib.Path]:
@@ -43,12 +45,25 @@ def find_files(folder: str) -> List[pathlib.Path]:
 
 
 def open_file(path: pathlib.Path):
-    return open(path, "r", encoding="utf-8")
+    """Open file and return the file descriptor.
+
+    If the file has known compressed file suffix (gz, bz2), then use gzip or bz2 module to open the file.
+    """
+    open_func = open
+    for t in FILE_TYPES:
+        if path.name.endswith(t):
+            open_func = FILE_TYPES[t]
+    return open_func(path, "r", encoding="utf-8")
 
 
-def find_columns(
+def read_column_names(
     folder, files: List[pathlib.Path], separator=","
 ) -> Dict[pathlib.Path, List[str]]:
+    """Read column names for all files.
+
+    The return value is a dict {path: list-of-col-names}
+    :param folder: the base folder. All the paths are relative to this.
+    :param files: files to read column names"""
     paths = {}
     for path in files:
         f = open_file(folder / path)
@@ -80,7 +95,7 @@ def main():
     column_list = pn.widgets.MultiSelect(name="Columns", size=8)
 
     def update_column_names(_):
-        path_cols = find_columns(folder, file_list.value)
+        path_cols = read_column_names(folder, file_list.value)
         all_cols = set()
         for cols in path_cols.values():
             all_cols.update(cols)
