@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import argparse
-import os
 import sys
 
 from typing import List
@@ -9,9 +8,8 @@ import numpy as np
 import panel as pn
 
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource
 
-from fileplotter import csv
+from fileplotter import csv, data
 
 
 def parse_args(argv: List[str]) -> dict:
@@ -29,15 +27,6 @@ def parse_args(argv: List[str]) -> dict:
     return vars(parser.parse_args(argv))
 
 
-xs = np.arange(1000)
-ys = np.random.randn(1000).cumsum()
-x, y = xs[-1], ys[-1]
-
-
-known_files = {}
-known_column_names = {}
-
-
 def main():
     index = 0
     if "panel_realtime.py" in sys.argv:
@@ -47,11 +36,10 @@ def main():
     print(f"Starting fileplotter for folder {args['directory']}")
 
     pn.extension()
-    p = figure(sizing_mode="stretch_width", title="Bokeh streaming example")
-
-    cds = ColumnDataSource(data={"x": xs, "y": ys})
-
-    p.line("x", "y", source=cds)
+    bokeh_figure = figure(
+        sizing_mode="stretch_width", title="File plotter: plot new lines in CSV files"
+    )
+    bokeh_figure.circle(x=[0], y=[0])
     folder = args["directory"]
 
     files = csv.find_files(folder)
@@ -76,22 +64,26 @@ def main():
 
     file_list.param.watch(update_column_names, "value")
     control_row = pn.Row(file_list, column_list)
-    bk_pane = pn.pane.Bokeh(p)
+    bk_pane = pn.pane.Bokeh(bokeh_figure)
     column = pn.Column(control_row, bk_pane, width=700)
     column.servable()
 
     def stream():
-        global x, y
-        x += 1
-        y += np.random.randn()
-        cds.stream({"x": [x], "y": [y]})
+        if not hasattr(pn.state, "data_store"):
+            pn.state.data_store = {}
+
+        for path in file_list.value:
+            data.read_data_file(
+                folder / path, column_list.value, pn.state.data_store, bokeh_figure
+            )
+
         pn.io.push_notebook(bk_pane)  # Only needed when running in notebook context
 
-    pn.state.add_periodic_callback(stream, 100)
+    pn.state.add_periodic_callback(stream, 500)
     return bk_pane, stream
 
 
-main_pane, stream = main()
+main_pane, stream_cb = main()
 
 # if __name__ == "__main__":
 #     pn.serve(main_pane, threaded=True)
