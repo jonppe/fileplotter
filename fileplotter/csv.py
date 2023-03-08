@@ -12,8 +12,6 @@ import pandas as pd
 
 FILE_TYPES = {".csv": open, ".csv.gz": gzip.open, ".csv.bz2": bz2.open}
 
-MAX_ROWS = 5000
-
 
 def load_dataframe_continuous(
     path: Union[str, pathlib.Path],

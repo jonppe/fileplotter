@@ -5,9 +5,13 @@ import pathlib
 from dataclasses import dataclass
 from typing import IO, List, Dict, Optional
 
-from bokeh.models import ColumnDataSource
 
-from fileplotter.csv import MAX_ROWS, read_column_names_file, load_dataframe_continuous
+import panel as pn
+from bokeh.models import ColumnDataSource, Line
+
+from fileplotter.csv import read_column_names_file, load_dataframe_continuous
+
+MAX_ROWS = 15000
 
 
 @dataclass
@@ -15,7 +19,27 @@ class OpenFile:
     file: Optional[IO]
     col_names: List[str]
     data: Dict[str, ColumnDataSource]
+    lines: Dict[str, Line]
     rows: int
+
+
+def clean_line(ds: ColumnDataSource, line: Line):
+    print("Destroing column")
+    ds.destroy()
+    line.visible = False
+
+
+def clean(
+    data_store: Dict[pathlib.Path, OpenFile],
+    selected_files: List[pathlib.Path],
+    selected_cols: List[str],
+):
+    unused_paths = [p for p in data_store.keys() if p not in selected_files]
+    for p in unused_paths:
+        for col, ds in data_store[p].data.items():
+            clean_line(ds, data_store[p].lines[col])
+
+        data_store.pop(p)
 
 
 def read_data_file(
@@ -23,6 +47,7 @@ def read_data_file(
     used_columns: List[str],
     old_data: dict,
     bokeh_figure,
+    path_description: str,
     separator=",",
     max_rows=MAX_ROWS,
 ):
@@ -32,7 +57,9 @@ def read_data_file(
             cols = file_info.col_names
         else:
             col_names = read_column_names_file(path, separator)
-            file_info = OpenFile(file=None, col_names=col_names, data={}, rows=0)
+            file_info = OpenFile(
+                file=None, col_names=col_names, data={}, rows=0, lines={}
+            )
             old_data[path] = file_info
             cols = None
     except Exception as e:
@@ -64,7 +91,14 @@ def read_data_file(
             print(f"New col {col} with {len(df)}")
             ds = ColumnDataSource(new_data)
             file_info.data[col] = ds
-            bokeh_figure.line("x", "y", source=ds)
+            color = next(pn.state.colors) if hasattr(pn.state, "colors") else None
+            file_info.lines[col] = bokeh_figure.line(
+                "x",
+                "y",
+                source=ds,
+                legend_label=f"{path_description}:{col}",
+                color=color,
+            )
 
     file_info.rows = rows_end
     return file_info
