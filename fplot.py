@@ -9,6 +9,7 @@ import panel as pn
 
 from bokeh.plotting import figure
 
+import fileplotter.file_utils
 from fileplotter import csv, data
 
 
@@ -42,7 +43,7 @@ def main():
     bokeh_figure.circle(x=[0], y=[0])
     folder = args["directory"]
 
-    files = csv.find_files(folder)
+    files = fileplotter.file_utils.find_latest_files(folder)
     files = [f.relative_to(folder) for f in files]
     file_list = pn.widgets.MultiSelect(
         name="Files:", options=files, size=8, value=files[0:1]

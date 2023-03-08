@@ -71,14 +71,6 @@ def load_dataframe(path: Union[str, pathlib.Path]):
     return load_dataframe_continuous(path)[0]
 
 
-def find_files(folder: str) -> List[pathlib.Path]:
-    p = pathlib.Path(folder)
-    files = []
-    for t in FILE_TYPES:
-        files.extend(p.glob(f"*{t}"))
-    return files
-
-
 def open_file(path: pathlib.Path):
     """Open file and return the file descriptor.
 
