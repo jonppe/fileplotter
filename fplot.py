@@ -90,7 +90,7 @@ def main():
         try:
             if not hasattr(doc, "data_store"):
                 doc.data_store = {}
-                doc.colors = itertools.cycle(palettes.Spectral11)
+                doc.colors = itertools.cycle(palettes.Category10_10)
 
             for path in file_list.value:
                 data.read_data_file(
