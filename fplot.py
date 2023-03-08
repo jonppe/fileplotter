@@ -15,6 +15,8 @@ from bokeh.plotting import figure
 import fileplotter.file_utils
 from fileplotter import csv, data
 
+from bokeh.plotting import curdoc
+
 
 def parse_args(argv: List[str]) -> dict:
     """Parse commandline arguments in sys.argv list into a dictionary"""
@@ -31,13 +33,19 @@ def parse_args(argv: List[str]) -> dict:
     return vars(parser.parse_args(argv))
 
 
+def onload():
+    doc.add_periodic_callback(stream_cb, 500)
+
+
 def main():
     index = 0
     if "panel_realtime.py" in sys.argv:
         index = sys.argv.index("panel_realtime.py")
 
     args = parse_args(sys.argv[index + 1 :])
-    print(f"Starting fileplotter for folder {args['directory']}")
+    print(
+        f"Starting fileplotter for folder {args['directory']}: {pn.state}, {curdoc()}"
+    )
 
     pn.extension()
     folder = args["directory"]
@@ -58,8 +66,8 @@ def main():
             all_cols.update(cols)
 
         column_list.options = list(all_cols)
-        if hasattr(pn.state, "data_store"):
-            data.clean(pn.state.data_store, csv_files, column_list.value)
+        if hasattr(doc, "data_store"):
+            data.clean(doc.data_store, csv_files, column_list.value)
 
     update_column_names(None)
 
@@ -76,32 +84,34 @@ def main():
     column = pn.Column(control_row, bk_pane, width=700)
     column.servable()
 
-    def stream():
+    async def stream():
         try:
-            if not hasattr(pn.state, "data_store"):
-                pn.state.data_store = {}
-                # create a color iterator
-                pn.state.colors = itertools.cycle(palettes.Spectral11)
+            if not hasattr(doc, "data_store"):
+                doc.data_store = {}
+                doc.colors = itertools.cycle(palettes.Spectral11)
 
             for path in file_list.value:
                 data.read_data_file(
                     folder / path,
                     column_list.value,
-                    pn.state.data_store,
+                    doc.data_store,
                     bokeh_figure,
                     str(path),
+                    doc,
                 )
 
-            pn.io.push_notebook(bk_pane)  # Only needed when running in notebook context
+            # pn.io.push_notebook(bk_pane)  # Only needed when running in notebook context
 
         except Exception as e:
             print(f"Exception in updating data: {e}")
             traceback.print_exc()
 
-    pn.state.add_periodic_callback(stream, 500)
-
+    pn.state.onload(onload)
     return bk_pane, stream
 
+
+# Save curdoc() to make sure all threads see the same document.
+doc = curdoc()
 
 main_pane, stream_cb = main()
 

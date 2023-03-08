@@ -48,6 +48,7 @@ def read_data_file(
     old_data: dict,
     bokeh_figure,
     path_description: str,
+    doc,
     separator=",",
     max_rows=MAX_ROWS,
 ):
@@ -91,7 +92,7 @@ def read_data_file(
             print(f"New col {col} with {len(df)}")
             ds = ColumnDataSource(new_data)
             file_info.data[col] = ds
-            color = next(pn.state.colors) if hasattr(pn.state, "colors") else None
+            color = next(doc.colors)
             file_info.lines[col] = bokeh_figure.line(
                 "x",
                 "y",
