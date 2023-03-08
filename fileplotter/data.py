@@ -47,6 +47,8 @@ def read_data_file(
         cols=cols,
         f=file_info.file,
     )
+    if len(df) > max_rows:
+        df = df.iloc[-max_rows:]
     file_info.file = f
     rows_end = file_info.rows + len(df)
     for col in used_columns:
