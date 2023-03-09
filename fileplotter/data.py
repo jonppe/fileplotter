@@ -102,4 +102,4 @@ def read_data_file(
             )
 
     file_info.rows = rows_end
-    return file_info
+    return rows_end, len(df)

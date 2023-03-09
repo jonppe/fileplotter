@@ -92,8 +92,10 @@ def main():
                 doc.data_store = {}
                 doc.colors = itertools.cycle(palettes.Category10_10)
 
+            x_max = -1
+            new_data_len = -1
             for path in file_list.value:
-                data.read_data_file(
+                x_end, data_len = data.read_data_file(
                     folder / path,
                     column_list.value,
                     doc.data_store,
@@ -101,8 +103,17 @@ def main():
                     str(path),
                     doc,
                 )
+                x_max = max(x_end, x_max)
+                new_data_len = max(new_data_len, data_len)
 
-            # pn.io.push_notebook(bk_pane)  # Only needed when running in notebook context
+            # Pan the image right when the newly added data is visible.
+            # Bokeh normally does this but only in the 'reset' state (i.e., all data visible).
+            # It would be nice to do this on the javascript-side, though.
+            x = bokeh_figure.x_range
+            if x.start < x_max < x.end - new_data_len:
+                bokeh_figure.x_range.start += new_data_len
+                bokeh_figure.x_range.end += new_data_len
+            pn.io.push_notebook(bk_pane)  # Only needed when running in notebook context
 
         except Exception as e:
             print(f"Exception in updating data: {e}")
