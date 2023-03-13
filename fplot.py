@@ -77,7 +77,6 @@ def main():
     bokeh_figure = figure(
         sizing_mode="stretch_width", title="File plotter: plot new lines in CSV files"
     )
-    bokeh_figure.circle(x=[0], y=[0])
     bokeh_figure.add_layout(
         models.Legend(click_policy="hide", background_fill_alpha=0.3)
     )
