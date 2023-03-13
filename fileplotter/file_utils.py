@@ -27,6 +27,6 @@ def find_latest_files(folder: str, changed_since_secs=60 * 60) -> List[pathlib.P
     p = pathlib.Path(folder)
     files = []
     for t in FILE_TYPES:
-        files.extend(p.glob(f"*{t}"))
+        files.extend(p.glob(f"**/*{t}"))
 
     return sort_and_limit_files(files, changed_since_secs)
