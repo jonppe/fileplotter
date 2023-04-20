@@ -23,7 +23,9 @@ def sort_and_limit_files(
     return [t[0] for t in files]
 
 
-def find_latest_files(folder: str, changed_since_secs=60 * 60) -> List[pathlib.Path]:
+def find_latest_files(
+    folder: str, changed_since_secs=60 * 60 * 24
+) -> List[pathlib.Path]:
     p = pathlib.Path(folder)
     files = []
     for t in FILE_TYPES:
