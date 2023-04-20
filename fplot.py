@@ -53,7 +53,11 @@ def main():
     files = fileplotter.file_utils.find_latest_files(folder)
     files = [f.relative_to(folder) for f in files]
     file_list = pn.widgets.MultiSelect(
-        name="Files:", options=files, size=8, value=files[0:1]
+        name="Files:",
+        options=files,
+        size=8,
+        value=files[0:1],
+        width=800,
     )
 
     column_list = pn.widgets.MultiSelect(name="Columns", size=8)
@@ -82,7 +86,7 @@ def main():
     )
     bk_pane = pn.pane.Bokeh(bokeh_figure)
 
-    column = pn.Column(control_row, bk_pane, width=700)
+    column = pn.Column(control_row, bk_pane, width=1500)
     column.servable()
 
     async def stream():
