@@ -62,7 +62,7 @@ def read_data_file(
                 file=None, col_names=col_names, data={}, rows=0, lines={}
             )
             old_data[path] = file_info
-            cols = None
+            cols = None  # Set cols to None so that load_dataframe_continuous() will read them from the file
     except Exception as e:
         print(f"Exception in reading data for {path}: {e}")
         return
